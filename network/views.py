@@ -10,27 +10,32 @@ from .models import Post, User
 
 
 def index(request):
-    return render(request, "network/index.html")
+    all_posts = Post.objects.all()
+    context = {
+        "posts": all_posts
+    }
+    return render(request, "network/index.html", context)
 
 
 @login_required
 def all_posts(request):
     # do pagination
     posts = Post.objects.all()
-    res = {
-        "data": [post.serialize() for post in posts]
-    }
+    res = {"data": [post.serialize() for post in posts]}
     return JsonResponse(res)
 
 
 @login_required
-def my_posts(request):
+def following_posts(request):
     # do pagination
     posts = Post.objects.filter(author=request.user)
-    res = {
-        "data": [post.serialize() for post in posts]
-    }
-    return JsonResponse(res)
+    return render(request, "network/following.html", {"posts": posts})
+
+
+def profile(request, username):
+    posts = Post.objects.filter(author__username=username)
+    
+    return render(request, "network/profile.html")
 
 
 @login_required
@@ -39,13 +44,12 @@ def create_post(request):
     post = Post(content=data["content"])
     post.author = request.user
     post.save()
-    
+
     return JsonResponse(post.serialize())
 
 
 def login_view(request):
     if request.method == "POST":
-
         # Attempt to sign user in
         username = request.POST["username"]
         password = request.POST["password"]
@@ -56,9 +60,11 @@ def login_view(request):
             login(request, user)
             return HttpResponseRedirect(reverse("index"))
         else:
-            return render(request, "network/login.html", {
-                "message": "Invalid username and/or password."
-            })
+            return render(
+                request,
+                "network/login.html",
+                {"message": "Invalid username and/or password."},
+            )
     else:
         return render(request, "network/login.html")
 
@@ -77,18 +83,18 @@ def register(request):
         password = request.POST["password"]
         confirmation = request.POST["confirmation"]
         if password != confirmation:
-            return render(request, "network/register.html", {
-                "message": "Passwords must match."
-            })
+            return render(
+                request, "network/register.html", {"message": "Passwords must match."}
+            )
 
         # Attempt to create new user
         try:
             user = User.objects.create_user(username, email, password)
             user.save()
         except IntegrityError:
-            return render(request, "network/register.html", {
-                "message": "Username already taken."
-            })
+            return render(
+                request, "network/register.html", {"message": "Username already taken."}
+            )
         login(request, user)
         return HttpResponseRedirect(reverse("index"))
     else:
