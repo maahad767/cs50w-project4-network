@@ -2,15 +2,18 @@ import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db import IntegrityError
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.db.models import Q 
+from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render
 from django.urls import reverse
 
-from .models import Post, User
+from .models import Post, User, Like
 
 
 def index(request):
-    all_posts = Post.objects.all()
+    all_posts = Post.objects.all().annotate(
+        is_liked=Q(likes__user=request.user)
+    )
     context = {
         "posts": all_posts
     }
@@ -21,7 +24,7 @@ def index(request):
 def all_posts(request):
     # do pagination
     posts = Post.objects.all()
-    res = {"data": [post.serialize() for post in posts]}
+    res = {"data": [post.serialize(request.user) for post in posts]}
     return JsonResponse(res)
 
 
@@ -40,12 +43,43 @@ def profile(request, username):
 
 @login_required
 def create_post(request):
-    data = json.loads(request.body)
-    post = Post(content=data["content"])
-    post.author = request.user
+    content = request.POST.get("content")
+    post = Post(content=content, author=request.user)
     post.save()
 
     return JsonResponse(post.serialize())
+
+
+@login_required
+def edit_post(request, post_id):
+    post = Post.objects.get(id=post_id)
+    post.content = json.loads(request.body)["content"]
+    post.save()
+    return JsonResponse(post.serialize())
+
+@login_required
+def like_post(request, post_id):
+    Like.objects.get_or_create(
+        user=request.user,
+        post_id=post_id,
+    )
+    data = {
+        "like_count": Post.objects.get(id=post_id).likes.count(),
+    }
+    return JsonResponse(data)
+
+
+@login_required
+def unlike_post(request, post_id):
+    like = Like.objects.get(
+        user=request.user,
+        post_id=post_id,
+    )
+    like.delete()
+    data = {
+        "like_count": Post.objects.get(id=post_id).likes.count(),
+    }
+    return JsonResponse(data)
 
 
 def login_view(request):
