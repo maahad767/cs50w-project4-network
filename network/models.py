@@ -30,13 +30,14 @@ class Post(models.Model):
     def __str__(self):
         return f"{self.id}: {self.title}"
 
-    def serialize(self):
+    def serialize(self, user=None):
         return {
             "id": self.pk,
             "content": self.content,
             "author": self.author.serialize(),
             "created_at": self.created_at.strftime("%B %d, %Y, %I:%M %p"),
-            "likes": self.likes.count()
+            "likes": self.likes.count(),
+            "is_liked": self.likes.filter(user=user).exists(),
         }
 
     class Meta:
