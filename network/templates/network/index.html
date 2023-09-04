@@ -1,46 +1,39 @@
-{% extends "network/layout.html" %}
-{% load static %}
+{% extends "network/layout.html" %} {% load static %} {% block body %}
 
-{% block body %}
-
-    <h1>All Posts</h1>
-    <div class="p-3 m-2 card rounded">
-      <form>
-        <h2>New Post</h2>
-        <textarea
-          class="form-control mb-3"
-          name="content"
-        ></textarea>
-        <button class="btn btn-primary">
-          Post
-        </button>
-      </form>
-    </div>
-    <div id="posts">
-    {% for post in posts %}
-    <div class="p-3 m-2 card rounded" data-post-id="{{ post.id }}">
-      <h5>
-        <a href="{% url 'profile' post.author.username %}">{{post.author.username}}</a>
-      </h5>
-      {% if request.user == post.author %}
-      <p class="mb-0">
-        <a href="" class="edit">Edit</a>
-      </p>
-      {% endif %}
-      <p class="mb-0 content">{{post.content}}</p>
-      <p class="mb-0">{{post.created_at}}</p>
-      <p class="mb-0" data-is-liked="{{post.is_liked|lower}}">
-        <button class="{% if post.is_liked %}text-danger{% else %}text-secondary{% endif %} btn btn-bg-none outline-0 p-0 w-0 like" >
-          &hearts;
-        </button>
-        {{post.likes.count}}
-      </p>
-      <p class="mb-0">Comments</p>
-    </div>
-    {% endfor %}
-   </div>
-
-<script src="{% static 'network/index.js' %}">
-</script>
+<h1>All Posts</h1>
+<div class="p-3 m-2 card rounded">
+  <form id="create-form">
+    <h2>New Post</h2>
+    <textarea class="form-control mb-3" name="content"></textarea>
+    <button class="btn btn-primary">Post</button>
+  </form>
+</div>
+<div id="posts">
+  {% for post in posts %}
+  <div class="p-3 m-2 card rounded" data-post-id="{{ post.id }}">
+    <h5>
+      <a href="{% url 'profile' post.author.username %}"
+        >{{post.author.username}}</a
+      >
+    </h5>
+    {% if request.user == post.author %}
+    <p class="mb-0">
+      <a href="" class="edit">Edit</a>
+    </p>
+    {% endif %}
+    <p class="mb-0 content">{{post.content}}</p>
+    <p class="mb-0">{{post.created_at}}</p>
+    <p class="mb-0" data-is-liked="{{post.is_liked|lower}}">
+      <button
+        class="{% if post.is_liked %}text-danger{% else %}text-secondary{% endif %} btn btn-bg-none outline-0 p-0 w-0 like"
+      >
+        &hearts;
+      </button>
+      {{post.likes.count}}
+    </p>
+    <p class="mb-0">Comments</p>
+  </div>
+  {% endfor %}
+</div>
 
 {% endblock %}
