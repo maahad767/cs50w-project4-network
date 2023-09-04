@@ -1,3 +1,5 @@
+const baseURL = window.location.protocol + "//" + window.location.host;
+
 function getCookie(name) {
   let cookieValue = null;
   if (document.cookie && document.cookie !== "") {
@@ -19,7 +21,7 @@ async function submitData(event) {
   const form = event.target;
   const formData = new FormData(form);
   const csrftoken = getCookie("csrftoken");
-  const resp = await fetch("posts/create", {
+  const resp = await fetch(baseURL + "posts/create", {
     method: "POST",
     headers: { "X-CSRFToken": csrftoken },
     mode: "same-origin",
@@ -58,7 +60,7 @@ function addPostToDOM(post) {
 
 document.addEventListener("DOMContentLoaded", function () {
   console.log("DOM Loaded");
-  const form = document.querySelector("form");
+  const form = document.querySelector("#create-form");
   if (form) {
     form.onsubmit = submitData;
   }
@@ -76,10 +78,14 @@ document.onclick = (event) => {
       handleLikePost(event);
     }
   }
+  if (target.className === "follow") {
+    handleFollow(event);
+  }
 };
 
 function handleEditPost(event) {
   event.preventDefault();
+  const target = event.target;
   const postId = target.closest("div").dataset.postId;
   const postElement = target.closest("div");
   const content = postElement.querySelector(".content");
@@ -100,8 +106,7 @@ function handleEditPost(event) {
     e.preventDefault();
     const csrftoken = getCookie("csrftoken");
     const updatedContent = textarea.value.trim();
-
-    const resp = await fetch(`posts/${postId}/edit`, {
+    const resp = await fetch(`${baseURL}/posts/${postId}/edit`, {
       method: "PUT",
       headers: { "X-CSRFToken": csrftoken },
       mode: "same-origin",
@@ -134,7 +139,7 @@ async function handleLikePost(event) {
   event.preventDefault();
   const postId = event.target.closest("div").dataset.postId;
   const csrftoken = getCookie("csrftoken");
-  const res = await fetch(`posts/${postId}/like`, {
+  const res = await fetch(`${baseURL}/posts/${postId}/like`, {
     method: "POST",
     headers: { "X-CSRFToken": csrftoken },
     mode: "same-origin",
@@ -154,7 +159,7 @@ async function handleUnlikePost(event) {
   event.preventDefault();
   const postId = event.target.closest("div").dataset.postId;
   const csrftoken = getCookie("csrftoken");
-  const res = await fetch(`posts/${postId}/unlike`, {
+  const res = await fetch(`${baseURL}/posts/${postId}/unlike`, {
     method: "POST",
     headers: { "X-CSRFToken": csrftoken },
     mode: "same-origin",
@@ -168,4 +173,28 @@ async function handleUnlikePost(event) {
         </button>
         ${likeCount}
   `;
+}
+
+async function handleFollow(event) {
+  event.preventDefault();
+  const target = event.target;
+  const username = target.dataset.username;
+  const isFollower = target.dataset.isFollower === "true";
+  const csrftoken = getCookie("csrftoken");
+  const resp = await fetch(
+    `${baseURL}/${username}/${isFollower ? "un" : ""}follow`,
+    {
+      method: "POST",
+      headers: { "X-CSRFToken": csrftoken },
+      mode: "same-origin",
+    }
+  );
+  if (resp.ok) {
+    const follow = await resp.json();
+    target.dataset.isFollower = !isFollower;
+    target.innerText = !isFollower ? "Unfollow" : "Follow";
+    document.querySelector("#follower-count").innerText = follow.follower_count;
+  } else {
+    throw new Error(resp.statusText);
+  }
 }
