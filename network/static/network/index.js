@@ -16,56 +16,6 @@ function getCookie(name) {
   return cookieValue;
 }
 
-async function submitData(event) {
-  event.preventDefault();
-  const form = event.target;
-  const formData = new FormData(form);
-  const csrftoken = getCookie("csrftoken");
-  const resp = await fetch(baseURL + "posts/create", {
-    method: "POST",
-    headers: { "X-CSRFToken": csrftoken },
-    mode: "same-origin",
-    body: formData,
-  });
-  const post = await resp.json();
-
-  addPostToDOM(post);
-  form.reset();
-}
-
-function addPostToDOM(post) {
-  const postContainer = document.querySelector("#posts");
-  const newPostNode = document.createElement("div");
-  newPostNode.className = "p-3 m-2 card rounded";
-  newPostNode.dataset.postId = post.id;
-  newPostNode.innerHTML = `
-      <h5>
-        <a href="profile/${post.author.username}">${post.author.username}</a>
-      </h5>
-      <p class="mb-0">
-        <a class="edit">Edit</a>
-      </p>
-      <p class="mb-0 content">${post.content}</p>
-      <p class="mb-0">${post.created_at}</p>
-      <p class="mb-0" data-is-liked="${post.is_liked}">
-        <button class="text-danger btn btn-bg-none outline-0 p-0 w-0">
-          &hearts;
-        </button>
-        ${post.likes}
-      </p>
-      <p class="mb-0">Comments</p>
-  `;
-  postContainer.prepend(newPostNode);
-}
-
-document.addEventListener("DOMContentLoaded", function () {
-  console.log("DOM Loaded");
-  const form = document.querySelector("#create-form");
-  if (form) {
-    form.onsubmit = submitData;
-  }
-});
-
 document.onclick = (event) => {
   const target = event.target;
   if (target.className === "edit") {

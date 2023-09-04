@@ -1,10 +1,11 @@
 import json
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
+from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.db.models import Q 
+from django.db.models import Q, Case, When, BooleanField, Value
 from django.http import HttpResponseBadRequest, HttpResponseRedirect, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import redirect, render
 from django.urls import reverse
 
 from .models import Follow, Post, User, Like
@@ -14,44 +15,49 @@ def index(request):
     user = request.user
     if not request.user.is_authenticated:
         user = None
-    all_posts = Post.objects.all().annotate(
-        is_liked=Q(likes__user=user)
-    )
+    all_posts = [post.serialize(user) for post in Post.objects.all()]
+
+    paginator = Paginator(all_posts, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
     # TODO fix the is_liked invalid bug
     context = {
-        "posts": all_posts
-    }
+        "page_obj": page_obj
+     }
     return render(request, "network/index.html", context)
 
 
 @login_required
-def all_posts(request):
-    # do pagination
-    posts = Post.objects.all()
-    res = {"data": [post.serialize(request.user) for post in posts]}
-    return JsonResponse(res)
-
-
-@login_required
 def following_posts(request):
-    # do pagination
-    posts = Post.objects.filter(author__in=request.user.following.values("following")).annotate(
-        is_liked=Q(likes__user=request.user)
-    )
+    user = request.user
+    if not request.user.is_authenticated:
+        user = None
+    posts = [post.serialize(user) for post in Post.objects.filter(author__in=request.user.following.values("following"))]
+    
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number) 
+    context = {
+        "page_obj": page_obj
+     }
 
-    return render(request, "network/following.html", {"posts": posts})
+    return render(request, "network/following.html", context)
 
 
 def profile(request, username):
-    posts = Post.objects.filter(author__username=username).annotate(
-        is_liked=Q(likes__user=request.user)
-    )
+    user = request.user
+    if not user.is_authenticated:
+        user = None
+    posts = [post.serialize(user) for post in Post.objects.filter(author__username=username)]
+    paginator = Paginator(posts, 10)
+    page_number = request.GET.get("page")
+    page_obj = paginator.get_page(page_number)
     
     return render(request, "network/profile.html", {
         "profile_user": User.objects.get(username=username),
-        "posts": posts,
+        "page_obj": page_obj,
         "is_follower": Follow.objects.filter(
-            follower=request.user,
+            follower=user,
             following__username=username
         ).exists(),
     })
@@ -63,12 +69,12 @@ def create_post(request):
     post = Post(content=content, author=request.user)
     post.save()
 
-    return JsonResponse(post.serialize())
+    return redirect(reverse("index")) 
 
 
 @login_required
 def edit_post(request, post_id):
-    post = Post.objects.get(id=post_id)
+    post = Post.objects.get(id=post_id, author=request.user)
     post.content = json.loads(request.body)["content"]
     post.save()
     return JsonResponse(post.serialize())
