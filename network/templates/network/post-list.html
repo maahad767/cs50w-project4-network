@@ -1,0 +1,41 @@
+<div>
+  {% for post in page_obj.object_list %}
+  <div class="p-3 m-2 card rounded" data-post-id="{{ post.id }}">
+    <h5>
+      <a href="{% url 'profile' post.author.username %}"
+        >{{post.author.username}}</a
+      >
+    </h5>
+    {% if request.user.username == post.author.username %}
+    <p class="mb-0">
+      <a href="" class="edit">Edit</a>
+    </p>
+    {% endif %}
+    <p class="mb-0 content">{{post.content}}</p>
+    <p class="mb-0">{{post.created_at}}</p>
+    <p class="mb-0" data-is-liked="{{post.is_liked|lower}}">
+      <button
+        class="{% if post.is_liked %}text-danger{% else %}text-secondary{% endif %} btn btn-bg-none outline-0 p-0 w-0 {% if user.is_authenticated %}like{% endif %}" 
+        {% if not user.is_authenticated %}title="Login to Like"{% endif %}
+      >
+        &hearts;
+      </button>
+      {{post.likes}}
+    </p>
+  </div>
+  {% endfor %}
+</div>
+<nav class="m-2 mb-5 mt-3">
+  <ul class="pagination justify-content-end">
+  {% if page_obj.has_previous %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.previous_page_number}}">Previous</a>
+    </li>
+  {% endif %}
+  {% if page_obj.has_next %}
+    <li class="page-item">
+      <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+    </li>
+  {% endif %}
+  </ul>
+</nav>
