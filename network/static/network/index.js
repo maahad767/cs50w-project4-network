@@ -75,7 +75,9 @@ function handleEditPost(event) {
         <p class="mb-0 content">${post.content}</p>
         <p class="mb-0">${post.created_at}</p>
         <p class="mb-0" data-is-liked="${post.is_liked}">
-          <button class="text-danger btn btn-bg-none outline-0 p-0 w-0">
+          <button class="${
+            post.is_liked ? "text-danger" : "text-secondary"
+          } btn btn-bg-none outline-0 p-0 w-0">
             &hearts;
           </button>
           ${post.likes}
